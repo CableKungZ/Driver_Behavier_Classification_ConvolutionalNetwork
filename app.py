@@ -65,7 +65,7 @@ def main():
 
     model = load_model(model_path)
 
-    uploaded_file = st.file_uploader("Choose an image...", type="jpg")
+    uploaded_file = st.file_uploader("Choose an image...", type="jpg,png")
     if uploaded_file is not None:
         image_tensor = transform_image(uploaded_file)
         class_probabilities = predict(model, image_tensor)
