@@ -54,10 +54,9 @@ def predict(model, image_tensor):
     with torch.no_grad():
         outputs = model(image_tensor)
         probabilities = F.softmax(outputs, dim=1)  # Convert logits to probabilities
-        top_prob, top_class = torch.max(probabilities, 1)
-        top_prob = top_prob.item() * 100  # Convert to percentage
-        top_class = top_class.item()
-        return class_names[top_class], top_prob
+        probabilities = probabilities.squeeze().cpu().numpy()  # Convert to numpy array
+        class_probabilities = {class_names[i]: prob * 100 for i, prob in enumerate(probabilities)}
+        return class_probabilities
 
 # Streamlit app interface
 def main():
@@ -69,10 +68,13 @@ def main():
     uploaded_file = st.file_uploader("Choose an image...", type="jpg")
     if uploaded_file is not None:
         image_tensor = transform_image(uploaded_file)
-        prediction, probability = predict(model, image_tensor)
+        class_probabilities = predict(model, image_tensor)
         st.image(uploaded_file, caption='Uploaded Image.', use_column_width=True)
-        st.write(f'Prediction: {prediction}')
-        st.write(f'Probability: {probability:.2f}%')
+        
+        # Display probabilities for each class
+        st.write("Probabilities for each class:")
+        for class_name, probability in class_probabilities.items():
+            st.write(f'{class_name}: {probability:.2f}%')
 
 if __name__ == "__main__":
     main()
