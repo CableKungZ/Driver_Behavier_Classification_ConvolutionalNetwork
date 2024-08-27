@@ -1,5 +1,5 @@
 import torch
-from torchvision import transforms
+from torchvision import models, transforms
 from PIL import Image
 import streamlit as st
 import os
@@ -13,9 +13,14 @@ if not os.path.exists(model_path):
     st.error(f"Model file not found at {model_path}. Please check the path.")
     st.stop()
 
-# Load your trained PyTorch model, with error handling
+# Instantiate the model architecture
+model = models.mobilenet_v3_large(pretrained=False)  # Use the correct architecture
+
+# Load the state dictionary into the model
 try:
-    model = torch.load(model_path, map_location=device)
+    state_dict = torch.load(model_path, map_location=device)
+    model.load_state_dict(state_dict)
+    model.to(device)
     model.eval()  # Set the model to evaluation mode
 except Exception as e:
     st.error(f"Error loading the model: {e}")
