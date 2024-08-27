@@ -4,6 +4,7 @@ import torchvision.models as models
 from PIL import Image
 from torchvision import transforms
 import timm
+import torch.nn.functional as F  # Import for softmax
 import io
 
 # Define the class names
@@ -52,8 +53,11 @@ def transform_image(image):
 def predict(model, image_tensor):
     with torch.no_grad():
         outputs = model(image_tensor)
-        _, predicted = torch.max(outputs, 1)
-        return class_names[predicted.item()]
+        probabilities = F.softmax(outputs, dim=1)  # Convert logits to probabilities
+        top_prob, top_class = torch.max(probabilities, 1)
+        top_prob = top_prob.item() * 100  # Convert to percentage
+        top_class = top_class.item()
+        return class_names[top_class], top_prob
 
 # Streamlit app interface
 def main():
@@ -65,9 +69,10 @@ def main():
     uploaded_file = st.file_uploader("Choose an image...", type="jpg")
     if uploaded_file is not None:
         image_tensor = transform_image(uploaded_file)
-        prediction = predict(model, image_tensor)
+        prediction, probability = predict(model, image_tensor)
         st.image(uploaded_file, caption='Uploaded Image.', use_column_width=True)
         st.write(f'Prediction: {prediction}')
+        st.write(f'Probability: {probability:.2f}%')
 
 if __name__ == "__main__":
     main()
