@@ -1,15 +1,15 @@
 import streamlit as st
 from PIL import Image
-import torchvision.transforms as transforms
 import torch
+import torchvision.transforms as transforms
 import torchvision.models as models
 
-# Define the model
-def get_mobilenet_v3_model(pretrained=True):
-    model = models.mobilenet_v3_large(pretrained=pretrained) if pretrained else models.mobilenet_v3_large(pretrained=False)
+def load_model(model_path):
+    model = models.mobilenet_v3_large(pretrained=False)
+    model.load_state_dict(torch.load(model_path))
+    model.eval()
     return model
 
-# Define the transformation for input images
 def transform_image(image):
     preprocess = transforms.Compose([
         transforms.Resize(256),
@@ -17,30 +17,25 @@ def transform_image(image):
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
-    return preprocess(image).unsqueeze(0)  # Add batch dimension
+    return preprocess(image).unsqueeze(0)  # เพิ่มมิติ batch
 
-# Load the model
-model = get_mobilenet_v3_model(pretrained=True)
-model.eval()  # Set the model to evaluation mode
+# Model Path
+model_path = 'MobilenetV3_Large0.pt' 
+model = load_model(model_path)
 
-# Streamlit file uploader
+class_names = ['other_activities', 'safe_driving', 'texting_phone', 'talking_phone', 'turning']
+
+# อัปโหลดไฟล์ภาพใน Streamlit
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "png"])
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert('RGB')
     input_tensor = transform_image(image)
 
-    # Make a prediction
+    # Predict
     with torch.no_grad():
         output = model(input_tensor)
 
-    # Process the output
-    def get_class_names():
-        url = 'https://raw.githubusercontent.com/anishathalye/imagenet-simple-labels/master/imagenet-simple-labels.json'
-        import requests
-        response = requests.get(url)
-        return response.json()
-
-    class_names = get_class_names()
+    # Predict Class Name
     _, predicted_idx = torch.max(output, 1)
     predicted_label = class_names[predicted_idx.item()]
 
