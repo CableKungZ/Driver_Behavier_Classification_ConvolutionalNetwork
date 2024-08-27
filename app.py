@@ -41,4 +41,4 @@ if uploaded_image is not None:
         for i, name in enumerate(class_names):
             # Set the color to blue if it's the maximum value, otherwise use the default color
             color = "blue" if name == classname else None
-            st.write(f"## <span style='color:{color}'>{name} : {prob*100:.2f}%</span>", unsafe_allow_html=True)
+            st.write(f"## <span style='color:{color}'>{name} : {prob[i]*100:.2f}%</span>", unsafe_allow_html=True)
