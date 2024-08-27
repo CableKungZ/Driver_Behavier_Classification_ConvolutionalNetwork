@@ -1,9 +1,8 @@
 import streamlit as st
 import torch
-import torchvision.models as models
+import timm  # Import timm library
 from PIL import Image
 from torchvision import transforms
-import io
 
 # Define the class names
 class_names = ['other_activities', 'safe_driving', 'texting_phone', 'talking_phone', 'turning']
@@ -12,7 +11,7 @@ class_names = ['other_activities', 'safe_driving', 'texting_phone', 'talking_pho
 class MobileNetV3Large(torch.nn.Module):
     def __init__(self, num_classes):
         super(MobileNetV3Large, self).__init__()
-        self.model = models.mobilenet_v3_large(pretrained=False, num_classes=num_classes)
+        self.model = timm.create_model('mobilenetv3_large_100', pretrained=False, num_classes=num_classes)  # Use timm to create the model
 
     def forward(self, x):
         return self.model(x)
@@ -21,7 +20,7 @@ class MobileNetV3Large(torch.nn.Module):
 def load_model(model_path):
     model = MobileNetV3Large(num_classes=len(class_names))  # Initialize model with number of classes
     try:
-        model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+        model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))  # Load state dict
         model.eval()
     except RuntimeError as e:
         st.error(f"RuntimeError: {e}")
