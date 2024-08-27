@@ -22,7 +22,7 @@ def transform_image(image):
     return preprocess(image).unsqueeze(0)  # เพิ่มมิติ batch
 
 # โหลดโมเดลจากไฟล์
-model_path = 'path_to_your_model/MobilenetV3_Large0.pt'  # แทนที่ด้วยที่อยู่ไฟล์ของคุณ
+model_path = 'MobilenetV3_Large0.pt'  # แทนที่ด้วยที่อยู่ไฟล์ของคุณ
 model = load_model(model_path)
 
 # รายการชื่อคลาส
