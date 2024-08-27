@@ -8,7 +8,7 @@ import os
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Ensure the model file exists
-model_path = 'models/MobilenetV3_Large0.pt'
+model_path = 'MobilenetV3_Large0.pt'
 if not os.path.exists(model_path):
     st.error(f"Model file not found at {model_path}. Please check the path.")
     st.stop()
