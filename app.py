@@ -3,6 +3,7 @@ import torch
 import torchvision.models as models
 from PIL import Image
 from torchvision import transforms
+import io
 
 # Define the class names
 class_names = ['other_activities', 'safe_driving', 'texting_phone', 'talking_phone', 'turning']
@@ -31,9 +32,9 @@ def load_model(model_path):
     return model
 
 # Function to transform the image for the model
-def transform_image(image_path):
+def transform_image(image):
     try:
-        image = Image.open(image_path).convert('RGB')
+        image = Image.open(image).convert('RGB')
     except Exception as e:
         st.error(f"Error loading image: {e}")
         st.stop()
@@ -61,10 +62,9 @@ def main():
 
     uploaded_file = st.file_uploader("Choose an image...", type="jpg")
     if uploaded_file is not None:
-        image_path = uploaded_file
-        image_tensor = transform_image(image_path)
+        image_tensor = transform_image(uploaded_file)
         prediction = predict(model, image_tensor)
-        st.image(image_path, caption='Uploaded Image.', use_column_width=True)
+        st.image(uploaded_file, caption='Uploaded Image.', use_column_width=True)
         st.write(f'Prediction: {prediction}')
 
 if __name__ == "__main__":
