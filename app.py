@@ -12,7 +12,7 @@ st.header('Upload Image')
 
 # Load Model 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-model = torch.load('models/EffecienceNet0.pt', map_location=device)
+model = torch.load('models/MobilenetV3_Large0.pt', map_location=device)
 
 # Display image & Prediction 
 uploaded_image = st.file_uploader('Choose an image', type=['jpg', 'jpeg', 'png'])
