@@ -19,6 +19,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 # Example: 
 # model = MobileNetV3_Large(num_classes=5)  # Example, replace with your model class and parameters
 model = torch.load('models/MobilenetV3_Large0.pt', map_location=device)
+model=model.half()
 model.eval()  # Set the model to evaluation mode
 
 # Display image & Prediction
