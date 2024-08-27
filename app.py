@@ -3,8 +3,11 @@ from torchvision import transforms
 from PIL import Image
 import streamlit as st
 
-# Load your trained PyTorch model
-model = torch.load('models/MobilenetV3_Large0.pt')
+# Check if a GPU is available and map the model to the appropriate device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Load your trained PyTorch model, mapping to the appropriate device
+model = torch.load('models/MobilenetV3_Large0.pt', map_location=device)
 model.eval()  # Set the model to evaluation mode
 
 # Define the image preprocessing function
@@ -16,7 +19,7 @@ def preprocess_image(image):
     ])
     image = preprocess(image)
     image = image.unsqueeze(0)  # Add batch dimension
-    return image
+    return image.to(device)
 
 # Define the prediction function
 def predict(image):
