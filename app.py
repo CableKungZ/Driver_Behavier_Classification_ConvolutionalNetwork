@@ -1,51 +1,43 @@
-import streamlit as st
 import torch
+from torchvision import transforms
 from PIL import Image
-from prediction import pred_class
-import os
+import streamlit as st
 
-# Set title
-st.title('Driving Behavior Classification')
+# Load your trained PyTorch model
+model = torch.load('models/MobilenetV3_Large0.pt')
+model.eval()  # Set the model to evaluation mode
 
-# Set Header
-st.header('Upload Image')
+# Define the image preprocessing function
+def preprocess_image(image):
+    preprocess = transforms.Compose([
+        transforms.Resize((224, 224)),  # Resize to the size expected by your model
+        transforms.ToTensor(),  # Convert the image to a tensor
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Normalize with ImageNet stats
+    ])
+    image = preprocess(image)
+    image = image.unsqueeze(0)  # Add batch dimension
+    return image
 
-# Load Model
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+# Define the prediction function
+def predict(image):
+    image = preprocess_image(image)
+    with torch.no_grad():
+        prediction = model(image)
+    return prediction
 
-# Ensure the model file exists
-model_path = 'models/MobilenetV3_Large0.pt'
-assert os.path.exists(model_path), f"Model file not found at {model_path}"
+# Streamlit UI
+st.title("PyTorch CNN Model Deployment")
+st.write("Upload an image to make a prediction.")
 
-try:
-    # Replace with your model architecture
-    from torchvision.models import mobilenet_v3_large  # Example, replace with yours
-    model = mobilenet_v3_large(num_classes=5)  # Replace with actual model definition
-    model.load_state_dict(torch.load(model_path, map_location=device))
-    model.eval()  # Set the model to evaluation mode
-except Exception as e:
-    st.error(f"Error loading model: {e}")
-    st.stop()
+# Upload File
+uploaded_file = st.file_uploader("Choose an image...", type="jpg")
 
-# Display image & Prediction
-uploaded_image = st.file_uploader('Choose an image', type=['jpg', 'jpeg', 'png'])
+if uploaded_file is not None:
+    # Display the uploaded image
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded Image", use_column_width=True)
 
-if uploaded_image is not None:
-    image = Image.open(uploaded_image).convert('RGB')
-    st.image(image, caption='Uploaded Image', use_column_width=True)
-    
-    class_names = ['other_activities', 'safe_driving', 'texting_phone', 'talking_phone', 'turning']
-
-    if st.button('Prediction'):
-        try:
-            # Prediction class
-            classname, prob = pred_class(model, image, class_names)
-            
-            st.write("## Prediction Result")
-            
-            # Iterate over the class_names and probs list
-            for i, name in enumerate(class_names):
-                color = "blue" if name == classname else None
-                st.write(f"## <span style='color:{color}'>{name} : {prob[i]*100:.2f}%</span>", unsafe_allow_html=True)
-        except Exception as e:
-            st.error(f"Error during prediction: {e}")
+    # Make prediction
+    prediction = predict(image)
+    predicted_class = prediction.argmax(dim=1).item()  # Get the index of the max log-probability
+    st.write(f"Prediction: {predicted_class}")
