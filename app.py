@@ -4,12 +4,14 @@ import torch
 import torchvision.transforms as transforms
 import torchvision.models as models
 
+# โหลดโมเดลที่ฝึกไว้ล่วงหน้า
 def load_model(model_path):
     model = models.mobilenet_v3_large(pretrained=False)
-    model.load_state_dict(torch.load(model_path))
+    model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
     model.eval()
     return model
 
+# การแปลงภาพสำหรับโมเดล
 def transform_image(image):
     preprocess = transforms.Compose([
         transforms.Resize(256),
@@ -19,10 +21,11 @@ def transform_image(image):
     ])
     return preprocess(image).unsqueeze(0)  # เพิ่มมิติ batch
 
-# Model Path
-model_path = 'MobilenetV3_Large0.pt' 
+# โหลดโมเดลจากไฟล์
+model_path = 'path_to_your_model/MobilenetV3_Large0.pt'  # แทนที่ด้วยที่อยู่ไฟล์ของคุณ
 model = load_model(model_path)
 
+# รายการชื่อคลาส
 class_names = ['other_activities', 'safe_driving', 'texting_phone', 'talking_phone', 'turning']
 
 # อัปโหลดไฟล์ภาพใน Streamlit
@@ -31,11 +34,11 @@ if uploaded_file is not None:
     image = Image.open(uploaded_file).convert('RGB')
     input_tensor = transform_image(image)
 
-    # Predict
+    # ทำนายภาพ
     with torch.no_grad():
         output = model(input_tensor)
 
-    # Predict Class Name
+    # ดึงชื่อคลาสที่ทำนาย
     _, predicted_idx = torch.max(output, 1)
     predicted_label = class_names[predicted_idx.item()]
 
