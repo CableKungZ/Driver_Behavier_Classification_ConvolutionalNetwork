@@ -2,13 +2,24 @@ import torch
 from torchvision import transforms
 from PIL import Image
 import streamlit as st
+import os
 
-# Check if a GPU is available and map the model to the appropriate device
+# Check if GPU is available and map the model to the appropriate device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Load your trained PyTorch model, mapping to the appropriate device
-model = torch.load('models/MobilenetV3_Large0.pt', map_location=device)
-model.eval()  # Set the model to evaluation mode
+# Ensure the model file exists
+model_path = 'models/MobilenetV3_Large0.pt'
+if not os.path.exists(model_path):
+    st.error(f"Model file not found at {model_path}. Please check the path.")
+    st.stop()
+
+# Load your trained PyTorch model, with error handling
+try:
+    model = torch.load(model_path, map_location=device)
+    model.eval()  # Set the model to evaluation mode
+except Exception as e:
+    st.error(f"Error loading the model: {e}")
+    st.stop()
 
 # Define the image preprocessing function
 def preprocess_image(image):
