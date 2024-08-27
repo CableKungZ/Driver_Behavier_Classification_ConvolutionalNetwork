@@ -1,62 +1,70 @@
 import torch
-from torchvision import models, transforms
+import torchvision.models as models
+import torchvision.transforms as transforms
 from PIL import Image
-import streamlit as st
-import os
 
-# Check if GPU is available and map the model to the appropriate device
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# Define the model
+def get_mobilenet_v3_model(pretrained=True):
+    """
+    Returns a MobileNetV3 model.
+    
+    Parameters:
+    - pretrained (bool): If True, returns a model pre-trained on ImageNet.
+    
+    Returns:
+    - model (torch.nn.Module): The MobileNetV3 model.
+    """
+    model = models.mobilenet_v3_large(pretrained=pretrained) if pretrained else models.mobilenet_v3_large(pretrained=False)
+    return model
 
-# Ensure the model file exists
-model_path = 'MobilenetV3_Large0.pt'
-if not os.path.exists(model_path):
-    st.error(f"Model file not found at {model_path}. Please check the path.")
-    st.stop()
-
-# Instantiate the model architecture
-model = models.mobilenet_v3_large(pretrained=False)  # Use the correct architecture
-
-# Load the state dictionary into the model
-try:
-    state_dict = torch.load(model_path, map_location=device)
-    model.load_state_dict(state_dict)
-    model.to(device)
-    model.eval()  # Set the model to evaluation mode
-except Exception as e:
-    st.error(f"Error loading the model: {e}")
-    st.stop()
-
-# Define the image preprocessing function
-def preprocess_image(image):
+# Define the transformation for input images
+def transform_image(image_path):
+    """
+    Transforms an image to the format expected by the model.
+    
+    Parameters:
+    - image_path (str): Path to the image file.
+    
+    Returns:
+    - tensor (torch.Tensor): Transformed image tensor.
+    """
     preprocess = transforms.Compose([
-        transforms.Resize((224, 224)),  # Resize to the size expected by your model
-        transforms.ToTensor(),  # Convert the image to a tensor
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Normalize with ImageNet stats
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
-    image = preprocess(image)
-    image = image.unsqueeze(0)  # Add batch dimension
-    return image.to(device)
+    image = Image.open(image_path).convert('RGB')
+    return preprocess(image).unsqueeze(0)  # Add batch dimension
 
-# Define the prediction function
-def predict(image):
-    image = preprocess_image(image)
-    with torch.no_grad():
-        prediction = model(image)
-    return prediction
+# Load the model
+model = get_mobilenet_v3_model(pretrained=True)
+model.eval()  # Set the model to evaluation mode
 
-# Streamlit UI
-st.title("PyTorch CNN Model Deployment")
-st.write("Upload an image to make a prediction.")
+# Load and preprocess an image
+image_path = 'path/to/your/image.jpg'
+input_tensor = transform_image(image_path)
 
-# Upload File
-uploaded_file = st.file_uploader("Choose an image...", type="jpg")
+# Make a prediction
+with torch.no_grad():
+    output = model(input_tensor)
 
-if uploaded_file is not None:
-    # Display the uploaded image
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+# Process the output
+def get_class_names():
+    """
+    Returns class names for ImageNet.
+    
+    Returns:
+    - class_names (list of str): The class names.
+    """
+    # Class names for ImageNet
+    url = 'https://raw.githubusercontent.com/anishathalye/imagenet-simple-labels/master/imagenet-simple-labels.json'
+    import requests
+    response = requests.get(url)
+    return response.json()
 
-    # Make prediction
-    prediction = predict(image)
-    predicted_class = prediction.argmax(dim=1).item()  # Get the index of the max log-probability
-    st.write(f"Prediction: {predicted_class}")
+class_names = get_class_names()
+_, predicted_idx = torch.max(output, 1)
+predicted_label = class_names[predicted_idx.item()]
+
+print(f'Predicted class: {predicted_label}')
